@@ -1,0 +1,99 @@
+# Ben Johnston - Sonata for Microtonal Piano: "Retuning the Piano" table
+# Source: scanned page (johnston_retuning_table_scan.pdf).
+#
+# EDIT THIS FILE to correct any value. Then run:  python generate_js_table.py
+# which rebuilds tuning_table.json and harmonic_compass.html from it.
+#
+# key  = piano key number, 1..88 (1 = A0, 88 = C8). MIDI note = key + 20.
+# name = note name as printed in the book.
+# hz   = target frequency in Hz.
+
+keys:
+  - {key: 1, name: "A", hz: 26.62}
+  - {key: 2, name: "A#", hz: 28.43}
+  - {key: 3, name: "B", hz: 30.38}
+  - {key: 4, name: "C", hz: 32.2}
+  - {key: 5, name: "C#", hz: 34.23}
+  - {key: 6, name: "D", hz: 35.69}
+  - {key: 7, name: "D#", hz: 38.07}
+  - {key: 8, name: "E", hz: 40.64}
+  - {key: 9, name: "F", hz: 42.65}
+  - {key: 10, name: "F#", hz: 45.68}
+  - {key: 11, name: "G", hz: 49.26}
+  - {key: 12, name: "G#", hz: 52.11}
+  - {key: 13, name: "A", hz: 54.23}
+  - {key: 14, name: "A#", hz: 56.19}
+  - {key: 15, name: "B", hz: 61.03}
+  - {key: 16, name: "C", hz: 64.62}
+  - {key: 17, name: "C#", hz: 67.88}
+  - {key: 18, name: "D", hz: 74.03}
+  - {key: 19, name: "D#", hz: 78.05}
+  - {key: 20, name: "E", hz: 81.4}
+  - {key: 21, name: "F", hz: 89.9}
+  - {key: 22, name: "F#", hz: 93.66}
+  - {key: 23, name: "G", hz: 97.67}
+  - {key: 24, name: "G#", hz: 101.84}
+  - {key: 25, name: "A", hz: 112.32}
+  - {key: 26, name: "A#", hz: 117.2}
+  - {key: 27, name: "B", hz: 117.88}
+  - {key: 28, name: "C", hz: 134.85}
+  - {key: 29, name: "C#", hz: 140.52}
+  - {key: 30, name: "D", hz: 146.41}
+  - {key: 31, name: "D#", hz: 152.91}
+  - {key: 32, name: "E", hz: 168.56}
+  - {key: 33, name: "F", hz: 175.85}
+  - {key: 34, name: "F#", hz: 183.34}
+  - {key: 35, name: "G", hz: 202.4}
+  - {key: 36, name: "G#", hz: 210.98}
+  - {key: 37, name: "A", hz: 220}
+  - {key: 38, name: "A#", hz: 229.47}
+  - {key: 39, name: "B", hz: 253.08}
+  - {key: 40, name: "C", hz: 263.97}
+  - {key: 41, name: "C#", hz: 275.34}
+  - {key: 42, name: "D", hz: 303.94}
+  - {key: 43, name: "D#", hz: 316.62}
+  - {key: 44, name: "E", hz: 330.16}
+  - {key: 45, name: "F", hz: 364.58}
+  - {key: 46, name: "F#", hz: 379.73}
+  - {key: 47, name: "G", hz: 396.19}
+  - {key: 48, name: "G#", hz: 410.73}
+  - {key: 49, name: "A", hz: 456.14}
+  - {key: 50, name: "A#", hz: 475.01}
+  - {key: 51, name: "B", hz: 495.52}
+  - {key: 52, name: "C", hz: 546.98}
+  - {key: 53, name: "C#", hz: 569.96}
+  - {key: 54, name: "D", hz: 594.56}
+  - {key: 55, name: "D#", hz: 620.08}
+  - {key: 56, name: "E", hz: 684.56}
+  - {key: 57, name: "F", hz: 712.9}
+  - {key: 58, name: "F#", hz: 743.69}
+  - {key: 59, name: "G", hz: 820.71}
+  - {key: 60, name: "G#", hz: 855.21}
+  - {key: 61, name: "A", hz: 892.28}
+  - {key: 62, name: "A#", hz: 930.76}
+  - {key: 63, name: "B", hz: 1027.42}
+  - {key: 64, name: "C", hz: 1070.42}
+  - {key: 65, name: "C#", hz: 1116.46}
+  - {key: 66, name: "D", hz: 1232.48}
+  - {key: 67, name: "D#", hz: 1283.72}
+  - {key: 68, name: "E", hz: 1320.64}
+  - {key: 69, name: "F", hz: 1381.8}
+  - {key: 70, name: "F#", hz: 1542.46}
+  - {key: 71, name: "G", hz: 1606.1}
+  - {key: 72, name: "G#", hz: 1675.22}
+  - {key: 73, name: "A", hz: 1728.58}
+  - {key: 74, name: "A#", hz: 1926.64}
+  - {key: 75, name: "B", hz: 1982.08}
+  - {key: 76, name: "C", hz: 2073.88}
+  - {key: 77, name: "C#", hz: 2313.68}
+  - {key: 78, name: "D", hz: 2410.24}
+  - {key: 79, name: "D#", hz: 2515.16}
+  - {key: 80, name: "E", hz: 2595.36}
+  - {key: 81, name: "F", hz: 2890.72}
+  - {key: 82, name: "F#", hz: 3017.36}
+  - {key: 83, name: "G", hz: 3111.72}
+  - {key: 84, name: "G#", hz: 3467.2}
+  - {key: 85, name: "A", hz: 3615.92}
+  - {key: 86, name: "A#", hz: 3774.08}
+  - {key: 87, name: "B", hz: 4008.48}
+  - {key: 88, name: "C", hz: 4630.4}

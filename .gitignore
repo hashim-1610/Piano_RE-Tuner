@@ -1,0 +1,21 @@
+# Scan of the printed score page: copyrighted material, keep it out of the repo
+johnston_retuning_table_scan.pdf
+Scanned_Document.pdf
+*.pdf
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Local scratch
+*.zip
+*.log
