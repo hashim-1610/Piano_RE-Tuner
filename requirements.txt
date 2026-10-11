@@ -1,0 +1,3 @@
+# Only needed to rebuild the web app from tuning.yaml (python generate_js_table.py).
+# Playing the app itself (harmonic_compass.html) needs no Python at all.
+pyyaml>=6.0
