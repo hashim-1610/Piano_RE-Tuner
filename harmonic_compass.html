@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Harmonic Compass — Piano Retuner</title>
+<style>
+  :root {
+    --bg: #0d0f14;
+    --bg-glow: #14202b;
+    --panel: #161a22;
+    --panel-2: #1c212b;
+    --border: #262c38;
+    --accent: #5eead4;
+    --accent-2: #818cf8;
+    --accent-soft: rgba(94, 234, 212, 0.12);
+    --text: #eceef3;
+    --text-dim: #9097a6;
+    --text-faint: #666d7d;
+    --warn: #fbbf77;
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: Inter, "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+    background: radial-gradient(1200px 600px at 50% -200px, var(--bg-glow), var(--bg));
+    background-color: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+    min-height: 100vh;
+  }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 36px 20px 64px; }
+
+  /* ---------- header ---------- */
+  header { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 28px; }
+  .brand { display: flex; align-items: center; gap: 14px; }
+  .logo {
+    width: 46px; height: 46px; border-radius: 14px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    display: grid; place-items: center; color: #08111a; font-size: 24px; font-weight: 700;
+    box-shadow: 0 8px 28px rgba(94, 234, 212, 0.25);
+  }
+  h1 { font-size: 24px; margin: 0; letter-spacing: -0.01em; }
+  .tagline { color: var(--text-dim); font-size: 14px; margin-top: 2px; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 14px; border-radius: 999px; font-size: 13px;
+    background: var(--panel); border: 1px solid var(--border); color: var(--text-dim);
+  }
+  .pill .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-faint); }
+  .pill.ok { color: var(--accent); border-color: rgba(94, 234, 212, 0.35); }
+  .pill.ok .dot { background: var(--accent); box-shadow: 0 0 10px var(--accent); }
+  .pill.bad { color: var(--warn); border-color: rgba(251, 191, 119, 0.35); }
+  .pill.bad .dot { background: var(--warn); }
+
+  /* ---------- layout ---------- */
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .grid > * { min-width: 0; }
+  @media (max-width: 760px) { .grid { grid-template-columns: minmax(0, 1fr); } .wrap { padding: 24px 14px 48px; } }
+  .card {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 22px;
+  }
+  .card h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-faint); margin: 0 0 16px; font-weight: 600; }
+  .full { grid-column: 1 / -1; }
+
+  /* ---------- controls ---------- */
+  .field { margin-bottom: 16px; }
+  .field > label { display: block; font-size: 13px; color: var(--text-dim); margin-bottom: 6px; }
+  .inline { display: flex; gap: 10px; }
+  select, button { font: inherit; font-size: 14px; }
+  select {
+    flex: 1; min-width: 0; background: var(--panel-2); color: var(--text);
+    border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px;
+  }
+  button.primary {
+    background: linear-gradient(135deg, var(--accent), #38bdf8); color: #06222a; font-weight: 600;
+    border: none; border-radius: 10px; padding: 10px 20px; cursor: pointer;
+    transition: transform 0.1s, filter 0.15s;
+  }
+  button.primary:hover:not(:disabled) { filter: brightness(1.08); }
+  button.primary:active:not(:disabled) { transform: scale(0.97); }
+  button.primary:disabled { background: var(--panel-2); color: var(--text-faint); cursor: not-allowed; }
+
+  .segmented { display: grid; grid-template-columns: 1fr 1fr; background: var(--panel-2); border: 1px solid var(--border); border-radius: 12px; padding: 4px; }
+  .segmented button {
+    background: transparent; border: none; color: var(--text-dim); padding: 10px 8px;
+    border-radius: 9px; cursor: pointer; transition: background 0.15s, color 0.15s;
+  }
+  .segmented button .sub { display: block; font-size: 11px; color: var(--text-faint); }
+  .segmented button.active { background: var(--accent-soft); color: var(--accent); outline: 1px solid rgba(94, 234, 212, 0.35); }
+  .segmented button.active .sub { color: var(--accent); opacity: 0.75; }
+
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+  /* ---------- now playing ---------- */
+  .now { text-align: center; padding: 6px 0 2px; }
+  .now .note { font-size: 64px; font-weight: 700; letter-spacing: -0.02em; line-height: 1; min-height: 64px; }
+  .now .meta { color: var(--text-dim); font-size: 14px; margin-top: 8px; min-height: 22px; }
+  .gauge { position: relative; height: 10px; border-radius: 999px; margin: 26px 8px 8px;
+    background: linear-gradient(90deg, rgba(129,140,248,0.35), rgba(94,234,212,0.18) 50%, rgba(251,191,119,0.35)); }
+  .gauge::before { content: ""; position: absolute; left: 50%; top: -5px; width: 2px; height: 20px; background: var(--text-faint); transform: translateX(-50%); }
+  .gauge .needle {
+    position: absolute; top: 50%; left: 50%; width: 16px; height: 16px; border-radius: 50%;
+    background: var(--accent); box-shadow: 0 0 14px var(--accent);
+    transform: translate(-50%, -50%); transition: left 0.18s ease-out; opacity: 0.35;
+  }
+  .gauge .needle.live { opacity: 1; }
+  .gauge-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-faint); margin: 0 4px; }
+  .cents-readout { text-align: center; margin-top: 10px; font-size: 15px; font-weight: 600; min-height: 24px; color: var(--accent); }
+
+  /* ---------- keyboard ---------- */
+  .kb-scroll { overflow-x: auto; padding-bottom: 6px; }
+  .keyboard { position: relative; height: 150px; min-width: 820px; user-select: none; touch-action: none; }
+  .key-w {
+    position: absolute; top: 0; bottom: 0; background: #e9ebf0; border: 1px solid #0d0f14;
+    border-radius: 0 0 5px 5px; cursor: pointer; transition: background 0.08s;
+  }
+  .key-b {
+    position: absolute; top: 0; height: 62%; background: #1b1f29; border: 1px solid #000;
+    border-radius: 0 0 4px 4px; z-index: 2; cursor: pointer; transition: background 0.08s;
+  }
+  .key-w.active { background: var(--accent); }
+  .key-b.active { background: #14b8a6; }
+  .key-w.c-mark::after {
+    content: attr(data-label); position: absolute; bottom: 4px; left: 0; right: 0; text-align: center;
+    font-size: 9px; color: #6b7280; pointer-events: none;
+  }
+  .kb-hint { font-size: 12px; color: var(--text-faint); margin-top: 10px; }
+  kbd { background: var(--panel-2); border: 1px solid var(--border); border-radius: 5px; padding: 1px 6px; font-size: 11px; color: var(--text-dim); }
+
+  /* ---------- notes ---------- */
+  .notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 18px; }
+  .note-card h3 { margin: 0 0 8px; font-size: 16px; }
+  .note-card p, .note-card li { color: var(--text-dim); font-size: 14px; margin: 0 0 8px; }
+  .note-card ol, .note-card ul { margin: 0; padding-left: 20px; }
+  .note-card b { color: var(--text); font-weight: 600; }
+  .num { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 7px; background: var(--accent-soft); color: var(--accent); font-size: 12px; font-weight: 700; margin-right: 8px; }
+  .callout { border-left: 3px solid var(--accent-2); background: rgba(129,140,248,0.08); padding: 10px 14px; border-radius: 0 10px 10px 0; font-size: 13px; color: var(--text-dim); margin-top: 10px; }
+
+  /* ---------- table ---------- */
+  details.card summary { cursor: pointer; font-weight: 600; list-style: none; display: flex; justify-content: space-between; align-items: center; }
+  details.card summary::-webkit-details-marker { display: none; }
+  details.card summary::after { content: "Show"; font-size: 12px; color: var(--accent); font-weight: 500; }
+  details[open].card summary::after { content: "Hide"; }
+  .table-wrap { max-height: 420px; overflow: auto; margin-top: 16px; border: 1px solid var(--border); border-radius: 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+  th, td { text-align: right; padding: 7px 12px; border-bottom: 1px solid var(--border); }
+  th:first-child, td:first-child, th:nth-child(3), td:nth-child(3) { text-align: left; }
+  th { position: sticky; top: 0; background: var(--panel-2); color: var(--text-dim); font-weight: 600; font-size: 12px; }
+  tr.hit td { background: var(--accent-soft); color: var(--accent); }
+  td.pos { color: var(--warn); } td.neg { color: var(--accent-2); }
+
+  /* ---------- log / footer ---------- */
+  .log { font-family: "SF Mono", Consolas, monospace; font-size: 12px; color: var(--text-faint); max-height: 110px; overflow-y: auto; }
+  .log div { padding: 1px 0; }
+  footer { text-align: center; color: var(--text-faint); font-size: 12px; margin-top: 36px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="logo">♪</div>
+      <div>
+        <h1>Harmonic Compass</h1>
+        <div class="tagline">Ben Johnston’s retuned piano — <em>Sonata for Microtonal Piano</em></div>
+      </div>
+    </div>
+    <div class="pill" id="statusPill"><span class="dot"></span><span id="statusText">Not connected</span></div>
+  </header>
+
+  <div class="grid">
+
+    <!-- controls -->
+    <section class="card">
+      <h2>Connection &amp; sound</h2>
+      <div class="field">
+        <label for="deviceSelect">MIDI input (your piano)</label>
+        <div class="inline">
+          <select id="deviceSelect" disabled><option>No MIDI devices found</option></select>
+          <button class="primary" id="connectBtn" disabled>Connect</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Tuning</label>
+        <div class="segmented" id="tuningSwitch">
+          <button data-mode="johnston" class="active">Johnston<span class="sub">retuned</span></button>
+          <button data-mode="standard">Standard<span class="sub">12-tone equal</span></button>
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label for="volume">Volume</label>
+          <input type="range" id="volume" min="0" max="100" value="70">
+        </div>
+        <div class="field">
+          <label for="wave">Tone</label>
+          <select id="wave">
+            <option value="soft">Soft piano-like</option>
+            <option value="triangle">Triangle</option>
+            <option value="sine">Sine (pure)</option>
+          </select>
+        </div>
+      </div>
+      <div class="log" id="log"></div>
+    </section>
+
+    <!-- now playing -->
+    <section class="card">
+      <h2>Now playing</h2>
+      <div class="now">
+        <div class="note" id="noteName">—</div>
+        <div class="meta" id="noteMeta">Play a note on the piano or on-screen keyboard</div>
+      </div>
+      <div class="gauge"><div class="needle" id="needle"></div></div>
+      <div class="gauge-labels"><span>−200¢ flat</span><span>standard</span><span>sharp +200¢</span></div>
+      <div class="cents-readout" id="centsReadout"></div>
+    </section>
+
+    <!-- keyboard -->
+    <section class="card full">
+      <h2>88-key keyboard</h2>
+      <div class="kb-scroll"><div class="keyboard" id="keyboard"></div></div>
+      <div class="kb-hint">
+        No piano connected yet? Click the keys, or use your computer keyboard:
+        <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> <kbd>F</kbd> <kbd>G</kbd> <kbd>H</kbd> <kbd>J</kbd> <kbd>K</kbd> are white keys, <kbd>W</kbd> <kbd>E</kbd> <kbd>T</kbd> <kbd>Y</kbd> <kbd>U</kbd> the black keys.
+        <kbd>Z</kbd> / <kbd>X</kbd> move down / up an octave.
+      </div>
+    </section>
+
+    <!-- tuning table -->
+    <details class="card full">
+      <summary>Tuning table — all 88 keys</summary>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Key</th><th>MIDI</th><th>Note</th><th>Johnston (Hz)</th><th>Standard (Hz)</th><th>Offset (cents)</th></tr></thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </details>
+
+  </div>
+
+  <h2 style="font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:var(--text-faint);margin:34px 0 14px;">Project notes</h2>
+  <div class="notes">
+
+    <div class="card note-card">
+      <h3>What this project does</h3>
+      <p>Ben Johnston’s <em>Sonata for Microtonal Piano</em> asks the pianist to retune all 88 strings to specific <b>just-intonation</b> pitches instead of the usual equal temperament. In the original, this is done physically with a Scalatron tuner.</p>
+      <p>Harmonic Compass reproduces that tuning digitally: you play a digital piano, and the sound you hear is generated at Johnston’s frequencies.</p>
+    </div>
+
+    <div class="card note-card">
+      <h3>How it works</h3>
+      <ol>
+        <li><b>Play</b> a key on the digital piano.</li>
+        <li>The piano sends a <b>MIDI</b> note message over USB.</li>
+        <li>The browser reads it through the <b>Web MIDI API</b>.</li>
+        <li>The app looks up that key’s target <b>frequency</b> in the Johnston table.</li>
+        <li>The <b>Web Audio API</b> plays a tone at exactly that frequency.</li>
+      </ol>
+      <div class="callout">No pitch-bend is used. Each note is synthesised at its own exact frequency, so chords with several different offsets sound correctly at once.</div>
+    </div>
+
+    <div class="card note-card">
+      <h3>Reading the display</h3>
+      <ul>
+        <li><b>Cents</b> measure pitch differences: 100 cents = 1 semitone.</li>
+        <li><b>Offset</b> is how far Johnston’s pitch is from standard tuning (A4 = 440 Hz). A positive value is sharper, a negative value is flatter.</li>
+        <li>Key 37 (A3, 220 Hz) is the anchor: offset 0.</li>
+        <li>The extremes are far from standard: key 1 is about −56¢ and key 88 about +175¢. That is expected for this piece.</li>
+        <li>Use the <b>Tuning</b> switch to compare Johnston against standard tuning.</li>
+      </ul>
+    </div>
+
+    <div class="card note-card">
+      <h3>Setup tips</h3>
+      <ul>
+        <li>Use <b>Chrome or Edge</b>. Firefox and Safari do not support Web MIDI.</li>
+        <li>Connect the piano by USB <b>before</b> opening the page, and allow the MIDI permission.</li>
+        <li>Switch <b>Local Control OFF</b> in the piano’s settings, otherwise you also hear its own untuned sound.</li>
+        <li>The sustain pedal is supported. Velocity controls loudness.</li>
+        <li>Use headphones or the laptop speakers; the piano’s speakers are not used.</li>
+      </ul>
+    </div>
+
+    <div class="card note-card">
+      <h3>Data &amp; editing the tuning</h3>
+      <p>The 88 frequencies come from the “Retuning the Piano” table in the score (the Scalatron switch settings are not needed here). They are stored in <b>tuning.yaml</b>.</p>
+      <p>To correct a value, edit <b>tuning.yaml</b> and run <b>python generate_js_table.py</b>; this page is rebuilt from it automatically.</p>
+    </div>
+
+    <div class="card note-card">
+      <h3>Limitations</h3>
+      <ul>
+        <li>The sound is a simple synthesised tone, not a sampled piano. Pitch accuracy is the goal here.</li>
+        <li>Small latency (a few milliseconds) between key press and sound.</li>
+        <li>Notes outside the 88-key range are ignored.</li>
+        <li>This simulates the retuned piano electronically. It does not change the strings of an acoustic piano.</li>
+      </ul>
+    </div>
+
+  </div>
+
+  <footer>Harmonic Compass · master’s project · tuning data: Ben Johnston, <em>Sonata for Microtonal Piano</em></footer>
+</div>
+
+<script>
+// ---- Johnston tuning table: MIDI note -> { name, johnstonHz, standardHz } (generated from tuning.yaml) ----
+const TUNING = {"21": {"name": "A", "johnstonHz": 26.62, "standardHz": 27.5}, "22": {"name": "A#", "johnstonHz": 28.43, "standardHz": 29.135}, "23": {"name": "B", "johnstonHz": 30.38, "standardHz": 30.868}, "24": {"name": "C", "johnstonHz": 32.2, "standardHz": 32.703}, "25": {"name": "C#", "johnstonHz": 34.23, "standardHz": 34.648}, "26": {"name": "D", "johnstonHz": 35.69, "standardHz": 36.708}, "27": {"name": "D#", "johnstonHz": 38.07, "standardHz": 38.891}, "28": {"name": "E", "johnstonHz": 40.64, "standardHz": 41.203}, "29": {"name": "F", "johnstonHz": 42.65, "standardHz": 43.654}, "30": {"name": "F#", "johnstonHz": 45.68, "standardHz": 46.249}, "31": {"name": "G", "johnstonHz": 49.26, "standardHz": 48.999}, "32": {"name": "G#", "johnstonHz": 52.11, "standardHz": 51.913}, "33": {"name": "A", "johnstonHz": 54.23, "standardHz": 55.0}, "34": {"name": "A#", "johnstonHz": 56.19, "standardHz": 58.27}, "35": {"name": "B", "johnstonHz": 61.03, "standardHz": 61.735}, "36": {"name": "C", "johnstonHz": 64.62, "standardHz": 65.406}, "37": {"name": "C#", "johnstonHz": 67.88, "standardHz": 69.296}, "38": {"name": "D", "johnstonHz": 74.03, "standardHz": 73.416}, "39": {"name": "D#", "johnstonHz": 78.05, "standardHz": 77.782}, "40": {"name": "E", "johnstonHz": 81.4, "standardHz": 82.407}, "41": {"name": "F", "johnstonHz": 89.9, "standardHz": 87.307}, "42": {"name": "F#", "johnstonHz": 93.66, "standardHz": 92.499}, "43": {"name": "G", "johnstonHz": 97.67, "standardHz": 97.999}, "44": {"name": "G#", "johnstonHz": 101.84, "standardHz": 103.826}, "45": {"name": "A", "johnstonHz": 112.32, "standardHz": 110.0}, "46": {"name": "A#", "johnstonHz": 117.2, "standardHz": 116.541}, "47": {"name": "B", "johnstonHz": 117.88, "standardHz": 123.471}, "48": {"name": "C", "johnstonHz": 134.85, "standardHz": 130.813}, "49": {"name": "C#", "johnstonHz": 140.52, "standardHz": 138.591}, "50": {"name": "D", "johnstonHz": 146.41, "standardHz": 146.832}, "51": {"name": "D#", "johnstonHz": 152.91, "standardHz": 155.563}, "52": {"name": "E", "johnstonHz": 168.56, "standardHz": 164.814}, "53": {"name": "F", "johnstonHz": 175.85, "standardHz": 174.614}, "54": {"name": "F#", "johnstonHz": 183.34, "standardHz": 184.997}, "55": {"name": "G", "johnstonHz": 202.4, "standardHz": 195.998}, "56": {"name": "G#", "johnstonHz": 210.98, "standardHz": 207.652}, "57": {"name": "A", "johnstonHz": 220.0, "standardHz": 220.0}, "58": {"name": "A#", "johnstonHz": 229.47, "standardHz": 233.082}, "59": {"name": "B", "johnstonHz": 253.08, "standardHz": 246.942}, "60": {"name": "C", "johnstonHz": 263.97, "standardHz": 261.626}, "61": {"name": "C#", "johnstonHz": 275.34, "standardHz": 277.183}, "62": {"name": "D", "johnstonHz": 303.94, "standardHz": 293.665}, "63": {"name": "D#", "johnstonHz": 316.62, "standardHz": 311.127}, "64": {"name": "E", "johnstonHz": 330.16, "standardHz": 329.628}, "65": {"name": "F", "johnstonHz": 364.58, "standardHz": 349.228}, "66": {"name": "F#", "johnstonHz": 379.73, "standardHz": 369.994}, "67": {"name": "G", "johnstonHz": 396.19, "standardHz": 391.995}, "68": {"name": "G#", "johnstonHz": 410.73, "standardHz": 415.305}, "69": {"name": "A", "johnstonHz": 456.14, "standardHz": 440.0}, "70": {"name": "A#", "johnstonHz": 475.01, "standardHz": 466.164}, "71": {"name": "B", "johnstonHz": 495.52, "standardHz": 493.883}, "72": {"name": "C", "johnstonHz": 546.98, "standardHz": 523.251}, "73": {"name": "C#", "johnstonHz": 569.96, "standardHz": 554.365}, "74": {"name": "D", "johnstonHz": 594.56, "standardHz": 587.33}, "75": {"name": "D#", "johnstonHz": 620.08, "standardHz": 622.254}, "76": {"name": "E", "johnstonHz": 684.56, "standardHz": 659.255}, "77": {"name": "F", "johnstonHz": 712.9, "standardHz": 698.456}, "78": {"name": "F#", "johnstonHz": 743.69, "standardHz": 739.989}, "79": {"name": "G", "johnstonHz": 820.71, "standardHz": 783.991}, "80": {"name": "G#", "johnstonHz": 855.21, "standardHz": 830.609}, "81": {"name": "A", "johnstonHz": 892.28, "standardHz": 880.0}, "82": {"name": "A#", "johnstonHz": 930.76, "standardHz": 932.328}, "83": {"name": "B", "johnstonHz": 1027.42, "standardHz": 987.767}, "84": {"name": "C", "johnstonHz": 1070.42, "standardHz": 1046.502}, "85": {"name": "C#", "johnstonHz": 1116.46, "standardHz": 1108.731}, "86": {"name": "D", "johnstonHz": 1232.48, "standardHz": 1174.659}, "87": {"name": "D#", "johnstonHz": 1283.72, "standardHz": 1244.508}, "88": {"name": "E", "johnstonHz": 1320.64, "standardHz": 1318.51}, "89": {"name": "F", "johnstonHz": 1381.8, "standardHz": 1396.913}, "90": {"name": "F#", "johnstonHz": 1542.46, "standardHz": 1479.978}, "91": {"name": "G", "johnstonHz": 1606.1, "standardHz": 1567.982}, "92": {"name": "G#", "johnstonHz": 1675.22, "standardHz": 1661.219}, "93": {"name": "A", "johnstonHz": 1728.58, "standardHz": 1760.0}, "94": {"name": "A#", "johnstonHz": 1926.64, "standardHz": 1864.655}, "95": {"name": "B", "johnstonHz": 1982.08, "standardHz": 1975.533}, "96": {"name": "C", "johnstonHz": 2073.88, "standardHz": 2093.005}, "97": {"name": "C#", "johnstonHz": 2313.68, "standardHz": 2217.461}, "98": {"name": "D", "johnstonHz": 2410.24, "standardHz": 2349.318}, "99": {"name": "D#", "johnstonHz": 2515.16, "standardHz": 2489.016}, "100": {"name": "E", "johnstonHz": 2595.36, "standardHz": 2637.02}, "101": {"name": "F", "johnstonHz": 2890.72, "standardHz": 2793.826}, "102": {"name": "F#", "johnstonHz": 3017.36, "standardHz": 2959.955}, "103": {"name": "G", "johnstonHz": 3111.72, "standardHz": 3135.963}, "104": {"name": "G#", "johnstonHz": 3467.2, "standardHz": 3322.438}, "105": {"name": "A", "johnstonHz": 3615.92, "standardHz": 3520.0}, "106": {"name": "A#", "johnstonHz": 3774.08, "standardHz": 3729.31}, "107": {"name": "B", "johnstonHz": 4008.48, "standardHz": 3951.066}, "108": {"name": "C", "johnstonHz": 4630.4, "standardHz": 4186.009}};
+
+const MIDI_LOW = 21, MIDI_HIGH = 108;
+let audioCtx = null, master = null;
+let mode = 'johnston';
+let waveStyle = 'soft';
+let sustainOn = false;
+const voices = new Map();      // midi -> voice
+const sustained = new Set();   // midi notes waiting for pedal release
+let midiAccess = null, currentInput = null;
+let computerBase = 60;
+
+const $ = id => document.getElementById(id);
+const deviceSelect = $('deviceSelect'), connectBtn = $('connectBtn');
+const statusPill = $('statusPill'), statusText = $('statusText');
+const noteName = $('noteName'), noteMeta = $('noteMeta');
+const needle = $('needle'), centsReadout = $('centsReadout');
+const logEl = $('log'), keyboardEl = $('keyboard'), tableBody = $('tableBody');
+
+function logLine(text) {
+  const d = document.createElement('div');
+  d.textContent = text;
+  logEl.prepend(d);
+  while (logEl.children.length > 30) logEl.removeChild(logEl.lastChild);
+}
+function setStatus(text, kind) {
+  statusText.textContent = text;
+  statusPill.className = 'pill' + (kind ? ' ' + kind : '');
+}
+const centsOf = e => 1200 * Math.log2(e.johnstonHz / e.standardHz);
+const fmtCents = c => (c >= 0 ? '+' : '') + c.toFixed(1);
+
+// ---------- audio ----------
+function ensureAudio() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    master = audioCtx.createGain();
+    master.gain.value = $('volume').value / 100;
+    master.connect(audioCtx.destination);
+  }
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+$('volume').addEventListener('input', e => { if (master) master.gain.value = e.target.value / 100; });
+$('wave').addEventListener('change', e => { waveStyle = e.target.value; });
+
+function startVoice(midi, velocity) {
+  const e = TUNING[midi];
+  const freq = mode === 'johnston' ? e.johnstonHz : e.standardHz;
+  const now = audioCtx.currentTime;
+  const peak = Math.max(0.05, Math.min(0.32, (velocity / 127) * 0.34));
+
+  const gain = audioCtx.createGain();
+  gain.gain.setValueAtTime(0, now);
+  gain.gain.linearRampToValueAtTime(peak, now + 0.008);
+  gain.gain.exponentialRampToValueAtTime(peak * 0.35, now + 0.6);
+  gain.gain.exponentialRampToValueAtTime(peak * 0.04, now + 6);
+  gain.connect(master);
+
+  const oscs = [];
+  const add = (type, mult, level) => {
+    const o = audioCtx.createOscillator(); o.type = type; o.frequency.value = freq * mult;
+    const g = audioCtx.createGain(); g.gain.value = level;
+    o.connect(g).connect(gain); o.start(now); oscs.push(o);
+  };
+  if (waveStyle === 'soft') { add('triangle', 1, 0.8); add('sine', 2, 0.25); add('sine', 3, 0.08); }
+  else add(waveStyle, 1, 1);
+
+  voices.set(midi, { gain, oscs });
+}
+function stopVoice(midi) {
+  const v = voices.get(midi);
+  if (!v) return;
+  const now = audioCtx.currentTime;
+  v.gain.gain.cancelScheduledValues(now);
+  v.gain.gain.setValueAtTime(Math.max(v.gain.gain.value, 0.0001), now);
+  v.gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
+  v.oscs.forEach(o => o.stop(now + 0.22));
+  voices.delete(midi);
+}
+
+// ---------- note events ----------
+function noteOn(midi, velocity = 90, source = '') {
+  const e = TUNING[midi];
+  if (!e) return;
+  ensureAudio();
+  sustained.delete(midi);
+  stopVoice(midi);
+  startVoice(midi, velocity);
+  setKeyActive(midi, true);
+  showNote(midi);
+  logLine(`on   ${e.name} (MIDI ${midi}) ${source}`.trim());
+}
+function noteOff(midi) {
+  if (!TUNING[midi] || !voices.has(midi)) { setKeyActive(midi, false); return; }
+  setKeyActive(midi, false);
+  if (sustainOn) sustained.add(midi); else stopVoice(midi);
+}
+function setSustain(on) {
+  sustainOn = on;
+  if (!on) { sustained.forEach(m => stopVoice(m)); sustained.clear(); }
+}
+function showNote(midi) {
+  const e = TUNING[midi];
+  const retuned = mode === 'johnston';
+  const freq = retuned ? e.johnstonHz : e.standardHz;
+  const c = centsOf(e);
+  noteName.textContent = e.name;
+  noteMeta.textContent = `Key ${midi - 20} · MIDI ${midi} · ${freq.toFixed(2)} Hz (${retuned ? 'Johnston' : 'standard'})`;
+  const shown = retuned ? c : 0;
+  needle.style.left = (50 + Math.max(-200, Math.min(200, shown)) / 400 * 100) + '%';
+  needle.classList.add('live');
+  centsReadout.textContent = retuned ? `${fmtCents(c)} cents from standard` : 'Standard tuning (0 cents)';
+  document.querySelectorAll('tr.hit').forEach(r => r.classList.remove('hit'));
+  const row = $('row-' + midi); if (row) row.classList.add('hit');
+}
+
+// ---------- keyboard drawing ----------
+const keyEls = {};
+function buildKeyboard() {
+  const blackPCs = [1, 3, 6, 8, 10];
+  const whites = [];
+  for (let m = MIDI_LOW; m <= MIDI_HIGH; m++) if (!blackPCs.includes(m % 12)) whites.push(m);
+  const w = 100 / whites.length;
+  let whiteCount = 0;
+  for (let m = MIDI_LOW; m <= MIDI_HIGH; m++) {
+    const el = document.createElement('div');
+    el.dataset.midi = m;
+    if (blackPCs.includes(m % 12)) {
+      el.className = 'key-b';
+      el.style.width = (w * 0.62) + '%';
+      el.style.left = (whiteCount * w - w * 0.31) + '%';
+    } else {
+      el.className = 'key-w';
+      el.style.width = w + '%';
+      el.style.left = (whiteCount * w) + '%';
+      if (m % 12 === 0) { el.classList.add('c-mark'); el.dataset.label = 'C' + (Math.floor(m / 12) - 1); }
+      whiteCount++;
+    }
+    keyboardEl.appendChild(el);
+    keyEls[m] = el;
+  }
+}
+function setKeyActive(midi, on) { if (keyEls[midi]) keyEls[midi].classList.toggle('active', on); }
+
+// mouse / touch on the on-screen keyboard
+let pointerMidi = null;
+keyboardEl.addEventListener('pointerdown', ev => {
+  const t = ev.target.closest('[data-midi]'); if (!t) return;
+  pointerMidi = +t.dataset.midi; noteOn(pointerMidi, 100, '(screen)');
+  keyboardEl.setPointerCapture(ev.pointerId);
+});
+const releasePointer = () => { if (pointerMidi !== null) { noteOff(pointerMidi); pointerMidi = null; } };
+keyboardEl.addEventListener('pointerup', releasePointer);
+keyboardEl.addEventListener('pointercancel', releasePointer);
+
+// computer keyboard fallback
+const KEYMAP = { a:0, w:1, s:2, e:3, d:4, f:5, t:6, g:7, y:8, h:9, u:10, j:11, k:12 };
+const downKeys = new Map();
+window.addEventListener('keydown', ev => {
+  if (ev.repeat || ev.ctrlKey || ev.metaKey || ev.altKey) return;
+  if (['SELECT', 'INPUT', 'TEXTAREA'].includes(ev.target.tagName)) return;
+  const k = ev.key.toLowerCase();
+  if (k === 'z') { computerBase = Math.max(24, computerBase - 12); logLine(`octave base: MIDI ${computerBase}`); return; }
+  if (k === 'x') { computerBase = Math.min(96, computerBase + 12); logLine(`octave base: MIDI ${computerBase}`); return; }
+  if (k in KEYMAP) { const m = computerBase + KEYMAP[k]; downKeys.set(k, m); noteOn(m, 95, '(computer key)'); }
+});
+window.addEventListener('keyup', ev => {
+  const k = ev.key.toLowerCase();
+  if (downKeys.has(k)) { noteOff(downKeys.get(k)); downKeys.delete(k); }
+});
+
+// ---------- table ----------
+function buildTable() {
+  const frag = document.createDocumentFragment();
+  for (let m = MIDI_LOW; m <= MIDI_HIGH; m++) {
+    const e = TUNING[m]; if (!e) continue;
+    const c = centsOf(e);
+    const tr = document.createElement('tr'); tr.id = 'row-' + m;
+    tr.innerHTML = `<td>${m - 20}</td><td>${m}</td><td>${e.name}</td>` +
+      `<td>${e.johnstonHz.toFixed(2)}</td><td>${e.standardHz.toFixed(2)}</td>` +
+      `<td class="${c > 0.05 ? 'pos' : c < -0.05 ? 'neg' : ''}">${fmtCents(c)}</td>`;
+    frag.appendChild(tr);
+  }
+  tableBody.appendChild(frag);
+}
+
+// ---------- tuning switch ----------
+document.querySelectorAll('#tuningSwitch button').forEach(b => b.addEventListener('click', () => {
+  mode = b.dataset.mode;
+  document.querySelectorAll('#tuningSwitch button').forEach(x => x.classList.toggle('active', x === b));
+  logLine(`tuning: ${mode}`);
+}));
+
+// ---------- MIDI ----------
+function handleMIDIMessage(ev) {
+  const [status, d1, d2] = ev.data;
+  const cmd = status & 0xf0;
+  if (cmd === 0x90 && d2 > 0) noteOn(d1, d2, '(piano)');
+  else if (cmd === 0x80 || (cmd === 0x90 && d2 === 0)) noteOff(d1);
+  else if (cmd === 0xB0 && d1 === 64) setSustain(d2 >= 64);
+}
+function populateDevices() {
+  const inputs = Array.from(midiAccess.inputs.values());
+  const prev = deviceSelect.value;
+  deviceSelect.innerHTML = '';
+  if (!inputs.length) {
+    deviceSelect.innerHTML = '<option>No MIDI devices found</option>';
+    deviceSelect.disabled = true; connectBtn.disabled = true;
+    if (!currentInput) setStatus('No MIDI device detected', 'bad');
+    return;
+  }
+  inputs.forEach(i => { const o = document.createElement('option'); o.value = i.id; o.textContent = i.name; deviceSelect.appendChild(o); });
+  if (inputs.some(i => i.id === prev)) deviceSelect.value = prev;
+  deviceSelect.disabled = false; connectBtn.disabled = false;
+  if (!currentInput) setStatus('Device found — click Connect', '');
+}
+connectBtn.addEventListener('click', () => {
+  ensureAudio();
+  if (currentInput) currentInput.onmidimessage = null;
+  const sel = Array.from(midiAccess.inputs.values()).find(i => i.id === deviceSelect.value);
+  if (!sel) return;
+  currentInput = sel;
+  currentInput.onmidimessage = handleMIDIMessage;
+  setStatus('Connected: ' + sel.name, 'ok');
+  logLine('connected to ' + sel.name);
+});
+
+buildKeyboard();
+buildTable();
+
+if (navigator.requestMIDIAccess) {
+  navigator.requestMIDIAccess().then(access => {
+    midiAccess = access;
+    populateDevices();
+    midiAccess.onstatechange = populateDevices;
+  }).catch(err => { setStatus('MIDI access denied', 'bad'); logLine('error: ' + err.message); });
+} else {
+  setStatus('Web MIDI not supported — use Chrome or Edge (on-screen keys still work)', 'bad');
+}
+</script>
+</body>
+</html>
